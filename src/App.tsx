@@ -16,7 +16,7 @@ const App = () => {
   const [notes, setNotes] = useState<TNote[]>([]);
   const inputFileRef = useRef<HTMLInputElement>(null);
   const [sheetId, setSheetId] = useState<string>();
-  const [lastSaved, setLastSaved] = useState<Date>();
+  const [lastSaved, setLastSaved] = useState(new Date());
   const debouncerRef = useRef(new Debouncer({ delay: 1000 }));
 
   const save = useCallback(() => {
@@ -37,7 +37,7 @@ const App = () => {
       const currentSheetData = {
         id: sheetId,
         notes,
-        lastSaved: lastSaved?.toISOString(),
+        lastSaved: lastSaved.toISOString(),
       };
 
       sheetRequest.onsuccess = () => {
@@ -81,7 +81,8 @@ const App = () => {
 
       const currentSheetId = new URLSearchParams(location.search).get("id");
       if (!currentSheetId) {
-        const newSheetId = crypto.randomUUID();
+        const sheetIdFromLocalStorage = localStorage.getItem("sheetId");
+        const newSheetId = sheetIdFromLocalStorage || crypto.randomUUID();
         const clearRequest = sheets.clear();
         clearRequest.onsuccess = () => {
           window.location.href = `${window.location.href}?id=${newSheetId}`;
@@ -113,6 +114,7 @@ const App = () => {
           }),
         }),
           currentSheetId;
+        localStorage.setItem("sheetId", currentSheetId);
         setSheetId(currentSheetId);
       };
     };
