@@ -223,7 +223,13 @@ const App = () => {
               <FaTrashAlt />
             </button>
           </div>
-          <div className="fixed bottom-0 right-0 flex  items-center gap-1 bg-blue-800 bg-opacity-50 px-2 py-0.5 text-[10px]">
+          <div
+            onClick={() => {
+              setLastSaved(new Date());
+              save();
+            }}
+            className="fixed bottom-0 right-0 flex cursor-pointer  items-center gap-1 bg-blue-800 bg-opacity-50 px-2 py-0.5 text-[10px]"
+          >
             <div>
               <FaSyncAlt />
             </div>
