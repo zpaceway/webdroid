@@ -3,6 +3,14 @@ import { Draggable } from "./components/Draggable";
 import { TNote } from "./components/Note/types";
 import { Note } from "./components/Note";
 import Debouncer from "./utils/Debouncer";
+import {
+  FaPlusCircle,
+  FaCloudDownloadAlt,
+  FaFileExport,
+  FaTrashAlt,
+  FaSyncAlt,
+  FaStickyNote,
+} from "react-icons/fa";
 
 const App = () => {
   const [notes, setNotes] = useState<TNote[]>([]);
@@ -118,7 +126,10 @@ const App = () => {
     <div className="fixed inset-0 flex items-center justify-center">
       <div className="relative h-full w-full overflow-hidden bg-slate-800">
         <div className="absolute inset-x-0 top-0 z-50 flex justify-between bg-blue-800 p-4 text-sm text-white shadow-md">
-          <div className="flex gap-4">
+          <div className="relative flex items-center gap-4">
+            <div className="text-base">
+              <FaStickyNote />
+            </div>
             <button
               className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
               onClick={() => {
@@ -143,15 +154,7 @@ const App = () => {
                 ]);
               }}
             >
-              Add note
-            </button>
-            <button
-              className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
-              onClick={() => {
-                save();
-              }}
-            >
-              Save
+              <FaPlusCircle />
             </button>
             <input
               ref={inputFileRef}
@@ -172,7 +175,7 @@ const App = () => {
                 inputFileRef.current?.click();
               }}
             >
-              Load
+              <FaCloudDownloadAlt />
             </button>
             <button
               className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
@@ -195,7 +198,7 @@ const App = () => {
                 a.remove();
               }}
             >
-              Export
+              <FaFileExport />
             </button>
             <button
               className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
@@ -206,10 +209,15 @@ const App = () => {
                 );
               }}
             >
-              New
+              <FaTrashAlt />
             </button>
           </div>
-          <div>Last Saved: {lastSaved?.toLocaleString()}</div>
+          <div className="fixed bottom-4 right-4 flex  items-center gap-2 rounded-md bg-blue-800 bg-opacity-50 px-4 py-2 text-xs">
+            <div>
+              <FaSyncAlt />
+            </div>
+            <div>{lastSaved?.toLocaleString()}</div>
+          </div>
         </div>
         <Draggable
           ctrl
