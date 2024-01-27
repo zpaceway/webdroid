@@ -228,7 +228,7 @@ const App = () => {
               setLastSaved(new Date());
               save();
             }}
-            className="fixed bottom-0 right-0 flex cursor-pointer  items-center gap-1 bg-blue-800 bg-opacity-50 px-2 py-0.5 text-[10px]"
+            className="fixed bottom-0 right-0 flex cursor-pointer select-none  items-center gap-1 bg-blue-800 bg-opacity-50 px-2 py-0.5 text-[10px]"
           >
             <div>
               <FaSyncAlt />
