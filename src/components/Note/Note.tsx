@@ -56,7 +56,12 @@ const NoteContent = ({
 
       {images.map((image) => (
         <div key={image}>
-          <img src={image} className="h-full w-full object-fill" alt="" />
+          <img
+            src={image}
+            className="h-full w-full object-fill"
+            draggable={false}
+            alt=""
+          />
         </div>
       ))}
     </div>
