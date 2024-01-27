@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { TPosition } from "./types";
 import Debouncer from "../../utils/Debouncer";
 
@@ -31,19 +31,27 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
     const [canDrag, setCanDrag] = useState(true);
     const debouncerRef = useRef(new Debouncer({ delay: 500 }));
 
+    useEffect(() => {
+      const handleScroll = () => {
+        canDrag && setCanDrag(false);
+
+        debouncerRef.current.exec(() => {
+          setCanDrag(true);
+        });
+      };
+      addEventListener("scroll", handleScroll, true);
+
+      return () => {
+        removeEventListener("scroll", handleScroll, true);
+      };
+    }, [canDrag]);
+
     return (
       <div
         {...rest}
         ref={ref}
         className={`${className} touch-none`}
         draggable={canDrag}
-        onScroll={() => {
-          canDrag && setCanDrag(false);
-
-          debouncerRef.current.exec(() => {
-            setCanDrag(true);
-          });
-        }}
         style={{
           ...style,
           transform: `translate(${position.x}px, ${position.y}px`,
