@@ -72,14 +72,13 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
         }}
         onDragStart={(e) => {
           if (!canDrag) return;
+          if (ctrl && !e.ctrlKey) return;
+          if (!ctrl && e.ctrlKey) return;
 
           const img = new Image();
           img.src =
             "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
           e.dataTransfer?.setDragImage(img, 0, 0);
-
-          if (ctrl && !e.ctrlKey) return;
-          if (!ctrl && e.ctrlKey) return;
           setDragStartOptions({
             client: { x: e.clientX, y: e.clientY },
             position: { ...position },
@@ -87,8 +86,10 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           onDragStart?.(e);
         }}
         onDrag={(e) => {
+          if (!canDrag) return;
           if (!dragStartOptions) return;
           if (!e.clientX && !e.clientY && !e.pageX && !e.pageY) return;
+
           internalRef.current!.style.opacity = "0.5";
           const deltaX = dragStartOptions.client.x - e.clientX;
           const deltaY = dragStartOptions.client.y - e.clientY;
@@ -109,7 +110,6 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
 
         onTouchStart={(e) => {
           if (!canDrag) return;
-
           if (ctrl && !(e.touches.length === 2)) return;
           if (!ctrl && e.touches.length === 2) return;
           internalRef.current!.style.opacity = "0.5";
@@ -123,6 +123,7 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           onTouchStart?.(e);
         }}
         onTouchMove={(e) => {
+          if (!canDrag) return;
           if (ctrl && !(e.touches.length === 2)) return;
           if (!ctrl && e.touches.length === 2) return;
           if (!dragStartOptions) return;
