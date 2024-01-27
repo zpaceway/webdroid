@@ -76,6 +76,7 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
         onDrag={(e) => {
           if (!dragStartOptions) return;
           if (!e.clientX && !e.clientY && !e.pageX && !e.pageY) return;
+          (e.target as HTMLDivElement).style.opacity = "0.5";
           const deltaX = dragStartOptions.client.x - e.clientX;
           const deltaY = dragStartOptions.client.y - e.clientY;
           const newPosition = {
@@ -87,6 +88,7 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           setPosition(newPosition);
         }}
         onDragEnd={(e) => {
+          (e.target as HTMLDivElement).style.opacity = "1";
           setDragStartOptions(undefined);
           onDragEnd?.(e);
         }}
@@ -95,6 +97,7 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
         onTouchStart={(e) => {
           if (ctrl && !(e.touches.length === 2)) return;
           if (!ctrl && e.touches.length === 2) return;
+          (e.target as HTMLDivElement).style.opacity = "0.5";
           setDragStartOptions({
             client: {
               x: e.targetTouches[0].clientX,
@@ -124,7 +127,8 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           initialPosition.y = newPosition.y;
           setPosition(newPosition);
         }}
-        onTouchEnd={() => {
+        onTouchEnd={(e) => {
+          (e.target as HTMLDivElement).style.opacity = "1";
           setDragStartOptions(undefined);
         }}
       >
