@@ -113,6 +113,7 @@ const Note = ({
     <Draggable
       ref={cardRef}
       onDragStart={onSelected}
+      onTouchStart={onSelected}
       onClick={onSelected}
       key={note.id}
       initialPosition={note.position}

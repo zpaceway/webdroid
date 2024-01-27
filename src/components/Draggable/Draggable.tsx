@@ -1,4 +1,10 @@
-import { forwardRef, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { TPosition } from "./types";
 import Debouncer from "../../utils/Debouncer";
 
@@ -15,6 +21,8 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
       className,
       onDragStart,
       onDragEnd,
+      onTouchStart,
+      onTouchEnd,
       style,
       initialPosition = { x: 0, y: 0 },
       ...rest
@@ -30,6 +38,9 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
     }>();
     const [canDrag, setCanDrag] = useState(true);
     const debouncerRef = useRef(new Debouncer({ delay: 500 }));
+    const internalRef = useRef<HTMLDivElement>(null);
+
+    useImperativeHandle(ref, () => internalRef.current!, []);
 
     useEffect(() => {
       const handleScroll = () => {
@@ -49,7 +60,7 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
     return (
       <div
         {...rest}
-        ref={ref}
+        ref={internalRef}
         className={`${className} touch-none`}
         draggable={canDrag}
         style={{
@@ -60,6 +71,8 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           e.preventDefault();
         }}
         onDragStart={(e) => {
+          if (!canDrag) return;
+
           const img = new Image();
           img.src =
             "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
@@ -76,7 +89,7 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
         onDrag={(e) => {
           if (!dragStartOptions) return;
           if (!e.clientX && !e.clientY && !e.pageX && !e.pageY) return;
-          (e.target as HTMLDivElement).style.opacity = "0.5";
+          internalRef.current!.style.opacity = "0.5";
           const deltaX = dragStartOptions.client.x - e.clientX;
           const deltaY = dragStartOptions.client.y - e.clientY;
           const newPosition = {
@@ -88,16 +101,18 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           setPosition(newPosition);
         }}
         onDragEnd={(e) => {
-          (e.target as HTMLDivElement).style.opacity = "1";
+          internalRef.current!.style.opacity = "1";
           setDragStartOptions(undefined);
           onDragEnd?.(e);
         }}
         //////////////////////////////////////////////////////////////
 
         onTouchStart={(e) => {
+          if (!canDrag) return;
+
           if (ctrl && !(e.touches.length === 2)) return;
           if (!ctrl && e.touches.length === 2) return;
-          (e.target as HTMLDivElement).style.opacity = "0.5";
+          internalRef.current!.style.opacity = "0.5";
           setDragStartOptions({
             client: {
               x: e.targetTouches[0].clientX,
@@ -105,6 +120,7 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
             },
             position: { ...position },
           });
+          onTouchStart?.(e);
         }}
         onTouchMove={(e) => {
           if (ctrl && !(e.touches.length === 2)) return;
@@ -128,8 +144,9 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           setPosition(newPosition);
         }}
         onTouchEnd={(e) => {
-          (e.target as HTMLDivElement).style.opacity = "1";
+          internalRef.current!.style.opacity = "1";
           setDragStartOptions(undefined);
+          onTouchEnd?.(e);
         }}
       >
         {children}
