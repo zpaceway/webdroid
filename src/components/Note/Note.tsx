@@ -16,7 +16,7 @@ const NoteContent = ({
   return (
     <div className="overflow-auto">
       <div
-        className="w-full bg-transparent p-4 outline-none"
+        className="w-full whitespace-pre-wrap bg-transparent p-4 outline-none"
         contentEditable
         dangerouslySetInnerHTML={{ __html: text }}
         onBlur={(e) => {
