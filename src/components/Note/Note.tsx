@@ -20,8 +20,8 @@ const NoteContent = ({
         contentEditable
         dangerouslySetInnerHTML={{ __html: text }}
         onBlur={(e) => {
-          initial.text = e.target.innerText;
-          setText(e.target.innerText);
+          initial.text = e.target.innerHTML;
+          setText(e.target.innerHTML);
         }}
         onPaste={(e) => {
           const blobs: File[] = [];
