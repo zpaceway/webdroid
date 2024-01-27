@@ -83,10 +83,15 @@ const App = () => {
       if (!currentSheetId) {
         const sheetIdFromLocalStorage = localStorage.getItem("sheetId");
         const newSheetId = sheetIdFromLocalStorage || crypto.randomUUID();
-        const clearRequest = sheets.clear();
-        clearRequest.onsuccess = () => {
-          window.location.href = `${window.location.href}?id=${newSheetId}`;
-        };
+        if (!sheetIdFromLocalStorage) {
+          const clearRequest = sheets.clear();
+          clearRequest.onsuccess = () => {
+            window.location.href = `${window.location.href}?id=${newSheetId}`;
+          };
+
+          return;
+        }
+        window.location.href = `${window.location.href}?id=${newSheetId}`;
         return;
       }
 
@@ -103,19 +108,22 @@ const App = () => {
           setSheetId(id);
           setNotes(notes);
           setLastSaved(new Date(lastSaved));
-          return;
+          return localStorage.setItem("sheetId", currentSheetId);
         }
-        sheets.add({
-          id: currentSheetId,
-          data: JSON.stringify({
+        const clearRequest = sheets.clear();
+        clearRequest.onsuccess = () => {
+          sheets.add({
             id: currentSheetId,
-            notes: [],
-            lastSaved: new Date().toISOString(),
+            data: JSON.stringify({
+              id: currentSheetId,
+              notes: [],
+              lastSaved: new Date().toISOString(),
+            }),
           }),
-        }),
-          currentSheetId;
-        localStorage.setItem("sheetId", currentSheetId);
-        setSheetId(currentSheetId);
+            currentSheetId;
+          localStorage.setItem("sheetId", currentSheetId);
+          setSheetId(currentSheetId);
+        };
       };
     };
   }, []);
@@ -205,6 +213,7 @@ const App = () => {
             <button
               className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
               onClick={() => {
+                localStorage.removeItem("sheetId");
                 window.location.href = window.location.href.replace(
                   window.location.search,
                   "",
