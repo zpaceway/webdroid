@@ -1,5 +1,6 @@
-import { forwardRef, useState } from "react";
+import { forwardRef, useRef, useState } from "react";
 import { TPosition } from "./types";
+import Debouncer from "../../utils/Debouncer";
 
 type TDraggableProps = {
   ctrl?: boolean;
@@ -27,13 +28,22 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
       client: { x: number; y: number };
       position: { x: number; y: number };
     }>();
+    const [canDrag, setCanDrag] = useState(true);
+    const debouncerRef = useRef(new Debouncer({ delay: 500 }));
 
     return (
       <div
         {...rest}
         ref={ref}
         className={`${className} touch-none`}
-        draggable
+        draggable={canDrag}
+        onScroll={() => {
+          canDrag && setCanDrag(false);
+
+          debouncerRef.current.exec(() => {
+            setCanDrag(true);
+          });
+        }}
         style={{
           ...style,
           transform: `translate(${position.x}px, ${position.y}px`,

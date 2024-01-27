@@ -116,7 +116,7 @@ const Note = ({
       onClick={onSelected}
       key={note.id}
       initialPosition={note.position}
-      className="absolute resize overflow-auto rounded-md text-sm font-medium shadow"
+      className="absolute flex resize flex-col overflow-hidden rounded-md text-sm font-medium shadow"
       style={{
         background: backgroundColor,
         color: textColor,
@@ -124,7 +124,7 @@ const Note = ({
         height,
       }}
     >
-      <div className="flex h-8 items-center gap-2 bg-black bg-opacity-20 px-4">
+      <div className="flex h-8 shrink-0 grow-0 items-center gap-2 bg-black bg-opacity-20 px-4">
         <div className="cursor-pointer text-sm text-white" onClick={onRemove}>
           <ImCross />
         </div>
@@ -167,9 +167,11 @@ const Note = ({
           />
         </div>
       </div>
-      {note.contents.map((content, index) => (
-        <NoteContent key={index} initial={content} />
-      ))}
+      <div className="h-full overflow-auto">
+        {note.contents.map((content, index) => (
+          <NoteContent key={index} initial={content} />
+        ))}
+      </div>
     </Draggable>
   );
 };
