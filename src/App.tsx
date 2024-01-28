@@ -122,20 +122,21 @@ const App = () => {
   return (
     <div className="fixed inset-0 flex items-center justify-center">
       <div className="relative h-full w-full overflow-hidden bg-slate-800">
-        <div className="absolute inset-x-0 top-0 z-50 flex h-16 justify-between bg-blue-500 bg-opacity-60 p-4 text-sm text-white shadow-md">
-          <div className="relative flex items-center gap-4">
-            <div className="text-base">
-              <FaStickyNote />
-            </div>
-            <button
-              className="fixed bottom-4 left-0 flex h-16 w-16 translate-x-[calc(50vw_-_32px)] items-center justify-center rounded-full bg-blue-500 text-4xl shadow-md"
+        <div className="absolute inset-x-0 top-0 z-50 flex h-16 justify-between bg-blue-500 bg-opacity-60 px-4 text-sm text-white shadow-md">
+          <div className="relative flex items-center gap-6">
+            <div
+              className="relative text-4xl"
               onClick={() => {
                 sheetRef.current?.addNote();
                 setNotes([...sheetRef.current.notes]);
               }}
             >
-              <FaPlusCircle />
-            </button>
+              <FaStickyNote />
+              <div className="absolute -right-0.5 -top-0.5 rounded-full text-lg text-blue-500">
+                <FaPlusCircle />
+              </div>
+            </div>
+
             <input
               ref={inputFileRef}
               type="file"
@@ -152,7 +153,6 @@ const App = () => {
               }}
             />
             <button
-              className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
               onClick={() => {
                 inputFileRef.current?.click();
               }}
@@ -160,7 +160,6 @@ const App = () => {
               <FaUpload />
             </button>
             <button
-              className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
               onClick={() => {
                 const savefile = JSON.stringify({ notes });
                 const blob = new Blob([savefile]);
@@ -182,7 +181,6 @@ const App = () => {
               <FaDownload />
             </button>
             <button
-              className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
               onClick={() => {
                 localStorage.removeItem("sheetId");
                 window.location.href = window.location.href.replace(
@@ -198,7 +196,7 @@ const App = () => {
             onClick={() => {
               sheetRef.current.lastChange = new Date();
             }}
-            className="fixed bottom-0 right-0 flex cursor-pointer select-none flex-col bg-blue-500 bg-opacity-60 px-2 py-1 text-right text-xs leading-4"
+            className="flex cursor-pointer select-none flex-col justify-center bg-opacity-60 px-2 py-1 text-right text-xs leading-4"
           >
             <div>{lastChange.toLocaleDateString()}</div>
             <div>{lastChange.toLocaleTimeString()}</div>
