@@ -1,12 +1,5 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { TPosition } from "./types";
-import Debouncer from "../../utils/Debouncer";
 
 type TDraggableProps = {
   ctrl?: boolean;
@@ -38,33 +31,16 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
       client: { x: number; y: number };
       position: { x: number; y: number };
     }>();
-    const [canDrag, setCanDrag] = useState(true);
-    const debouncerRef = useRef(new Debouncer({ delay: 500 }));
     const internalRef = useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => internalRef.current!, []);
-
-    useEffect(() => {
-      const handleScroll = () => {
-        canDrag && setCanDrag(false);
-
-        debouncerRef.current.exec(() => {
-          setCanDrag(true);
-        });
-      };
-      addEventListener("scroll", handleScroll, true);
-
-      return () => {
-        removeEventListener("scroll", handleScroll, true);
-      };
-    }, [canDrag]);
 
     return (
       <div
         {...rest}
         ref={internalRef}
         className={`${className} touch-none`}
-        draggable={canDrag}
+        draggable
         style={{
           ...style,
           transform: `translate(${position.x}px, ${position.y}px`,
@@ -73,7 +49,6 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           e.preventDefault();
         }}
         onDragStart={(e) => {
-          if (!canDrag) return;
           if (ctrl && !e.ctrlKey) return;
           if (!ctrl && e.ctrlKey) return;
 
@@ -88,7 +63,6 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           onDragStart?.(e);
         }}
         onDrag={(e) => {
-          if (!canDrag) return;
           if (!dragStartOptions) return;
           if (!e.clientX && !e.clientY && !e.pageX && !e.pageY) return;
 
@@ -96,11 +70,9 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           const deltaX = dragStartOptions.client.x - e.clientX;
           const deltaY = dragStartOptions.client.y - e.clientY;
           const newPosition = {
-            x: dragStartOptions.position.x - deltaX,
-            y: dragStartOptions.position.y - deltaY,
+            x: Math.round(dragStartOptions.position.x - deltaX),
+            y: Math.round(dragStartOptions.position.y - deltaY),
           };
-          initialPosition.x = newPosition.x;
-          initialPosition.y = newPosition.y;
           setPosition(newPosition);
           onPositionChanged?.(newPosition);
         }}
@@ -112,23 +84,19 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
         //////////////////////////////////////////////////////////////
 
         onTouchStart={(e) => {
-          debouncerRef.current.exec(() => {
-            if (!canDrag) return;
-            if (ctrl && !(e.touches.length === 2)) return;
-            if (!ctrl && e.touches.length === 2) return;
-            internalRef.current!.style.opacity = "0.5";
-            setDragStartOptions({
-              client: {
-                x: e.targetTouches[0].clientX,
-                y: e.targetTouches[0].clientY,
-              },
-              position: { ...position },
-            });
-            onTouchStart?.(e);
+          if (ctrl && !(e.touches.length === 2)) return;
+          if (!ctrl && e.touches.length === 2) return;
+          internalRef.current!.style.opacity = "0.5";
+          setDragStartOptions({
+            client: {
+              x: e.targetTouches[0].clientX,
+              y: e.targetTouches[0].clientY,
+            },
+            position: { ...position },
           });
+          onTouchStart?.(e);
         }}
         onTouchMove={(e) => {
-          if (!canDrag) return;
           if (ctrl && !(e.touches.length === 2)) return;
           if (!ctrl && e.touches.length === 2) return;
           if (!dragStartOptions) return;
@@ -142,11 +110,9 @@ const Draggable = forwardRef<HTMLDivElement, TDraggableProps>(
           const deltaX = dragStartOptions.client.x - e.targetTouches[0].clientX;
           const deltaY = dragStartOptions.client.y - e.targetTouches[0].clientY;
           const newPosition = {
-            x: dragStartOptions.position.x - deltaX,
-            y: dragStartOptions.position.y - deltaY,
+            x: Math.round(dragStartOptions.position.x - deltaX),
+            y: Math.round(dragStartOptions.position.y - deltaY),
           };
-          initialPosition.x = newPosition.x;
-          initialPosition.y = newPosition.y;
           setPosition(newPosition);
           onPositionChanged?.(newPosition);
         }}

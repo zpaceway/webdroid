@@ -11,7 +11,7 @@ const NoteContent = ({ note }: { note: Note }) => {
   const [image, setImage] = useState(note.image);
 
   return (
-    <div className="overflow-auto">
+    <div>
       <div
         className="w-full whitespace-pre-wrap bg-transparent p-4 outline-none"
         contentEditable
@@ -75,6 +75,7 @@ const NoteCard = ({
   const [textColor, setTextColor] = useState(note.textColor);
   const [width, setWidth] = useState(note.dimensions.width);
   const [height, setHeight] = useState(note.dimensions.height);
+  const scrollableRef = useRef<HTMLDivElement>(null);
 
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -168,8 +169,23 @@ const NoteCard = ({
           />
         </div>
       </div>
-      <div className="h-full overflow-auto">
-        <NoteContent note={note} />
+      <div className="overflow-hidden">
+        <div
+          ref={scrollableRef}
+          className="h-full overflow-auto"
+          onTouchStart={(e) => {
+            const element = scrollableRef.current as HTMLDivElement;
+
+            if (
+              element.scrollWidth > element.clientWidth ||
+              element.scrollHeight > element.clientHeight
+            ) {
+              e.stopPropagation();
+            }
+          }}
+        >
+          <NoteContent note={note} />
+        </div>
       </div>
     </Draggable>
   );

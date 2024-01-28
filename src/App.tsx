@@ -10,6 +10,7 @@ import {
   FaStickyNote,
 } from "react-icons/fa";
 import Sheet, { TNote } from "./utils/Sheet";
+import Debouncer from "./utils/Debouncer";
 
 const App = () => {
   const inputFileRef = useRef<HTMLInputElement>(null);
@@ -17,6 +18,7 @@ const App = () => {
   const [ready, setReady] = useState(false);
   const [notes, setNotes] = useState<Sheet["notes"]>([]);
   const [lastChange, setLastChange] = useState(sheetRef.current.lastChange);
+  const debouncerRef = useRef(new Debouncer({ delay: 1000 }));
 
   const save = useCallback(() => {
     const dbOpenRequest = indexedDB.open("sticky", 1);
@@ -39,7 +41,9 @@ const App = () => {
   useEffect(() => {
     sheetRef.current.onChange = () => {
       setLastChange(sheetRef.current.lastChange);
-      save();
+      debouncerRef.current.exec(() => {
+        save();
+      });
     };
   }, [save]);
 
