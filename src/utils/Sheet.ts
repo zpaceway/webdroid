@@ -20,6 +20,8 @@ export class Note implements TNote {
   private _text: string;
   private _image: string;
 
+  public signature: string;
+
   constructor(sheet: Sheet, note?: TNote) {
     this._sheet = sheet;
     this.id = note?.id || crypto.randomUUID();
@@ -32,8 +34,12 @@ export class Note implements TNote {
     this._dimensions = note?.dimensions || { width: 100, height: 100 };
     this._text = note?.text || "";
     this._image = note?.image || "";
+    this.signature = crypto.randomUUID(); // sign of authenticity
   }
 
+  get sheet() {
+    return this._sheet;
+  }
   get backgroundColor() {
     return this._backgroundColor;
   }

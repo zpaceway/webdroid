@@ -89,6 +89,7 @@ const NoteCard = ({
         width: Math.round(card.width),
         height: Math.round(card.height),
       };
+
       setWidth(Math.round(card.width));
       setHeight(Math.round(card.height));
     }),

@@ -16,6 +16,7 @@ const App = () => {
   const sheetRef = useRef<Sheet>(new Sheet());
   const [ready, setReady] = useState(false);
   const [notes, setNotes] = useState<Sheet["notes"]>([]);
+  const [lastChange, setLastChange] = useState(sheetRef.current.lastChange);
 
   const save = useCallback(() => {
     const dbOpenRequest = indexedDB.open("sticky", 1);
@@ -37,6 +38,7 @@ const App = () => {
 
   useEffect(() => {
     sheetRef.current.onChange = () => {
+      setLastChange(sheetRef.current.lastChange);
       save();
     };
   }, [save]);
@@ -87,17 +89,16 @@ const App = () => {
           sheetRef.current.lastChange = new Date(lastChange);
           sheetRef.current.notes = [];
 
-          const notes = rawNotes.map((rawNote) =>
-            sheetRef.current.addNote(rawNote),
-          );
+          rawNotes.map((rawNote) => sheetRef.current.addNote(rawNote));
 
-          setNotes(notes);
+          setNotes([...sheetRef.current.notes]);
           setReady(true);
           return localStorage.setItem("sheetId", currentSheetId);
         }
         const clearRequest = sheets.clear();
         clearRequest.onsuccess = () => {
-          setNotes([]);
+          sheetRef.current.notes = [];
+          setNotes([...sheetRef.current.notes]);
           sheetRef.current.id = currentSheetId;
           sheets.add({
             id: currentSheetId,
@@ -126,8 +127,8 @@ const App = () => {
             <button
               className="fixed bottom-4 left-0 flex h-10 w-10 translate-x-[calc(50vw_-_20px)] items-center justify-center rounded-full bg-blue-500 shadow-md"
               onClick={() => {
-                const newNote = sheetRef.current?.addNote();
-                setNotes([...notes, newNote]);
+                sheetRef.current?.addNote();
+                setNotes([...sheetRef.current.notes]);
               }}
             >
               <FaPlusCircle />
@@ -142,10 +143,8 @@ const App = () => {
                 file?.text().then((savefile) => {
                   const rawNotes = JSON.parse(savefile).notes as TNote[];
                   sheetRef.current.notes = [];
-                  const notes = rawNotes.map((rawNote) =>
-                    sheetRef.current!.addNote(rawNote),
-                  );
-                  setNotes(notes);
+                  rawNotes.map((rawNote) => sheetRef.current.addNote(rawNote));
+                  setNotes([...sheetRef.current.notes]);
                 });
               }}
             />
@@ -194,14 +193,14 @@ const App = () => {
           </div>
           <div
             onClick={() => {
-              sheetRef.current!.lastChange = new Date();
+              sheetRef.current.lastChange = new Date();
             }}
             className="fixed bottom-0 right-0 flex cursor-pointer select-none  items-center gap-1 bg-blue-800 bg-opacity-50 px-2 py-0.5 text-[10px]"
           >
             <div>
               <FaSyncAlt />
             </div>
-            <div>{sheetRef.current!.lastChange?.toLocaleString()}</div>
+            <div>{lastChange.toLocaleString()}</div>
           </div>
         </div>
         <Draggable
@@ -215,19 +214,23 @@ const App = () => {
         >
           {notes.map((note) => (
             <NoteCard
-              key={note.id}
+              key={note.signature}
               note={note}
               onSelected={() => {
                 if (notes.slice(-1)[0].id === note.id) return;
-                setNotes((notes) => [
-                  ...notes!.filter((_note) => _note.id !== note.id),
+                sheetRef.current.notes = [
+                  ...sheetRef.current.notes!.filter(
+                    (_note) => _note.id !== note.id,
+                  ),
                   note,
-                ]);
+                ];
+                setNotes([...sheetRef.current.notes]);
               }}
               onRemove={() => {
-                setNotes((notes) =>
-                  notes!.filter((_note) => _note.id !== note.id),
+                sheetRef.current.notes = sheetRef.current.notes.filter(
+                  (_note) => _note.id !== note.id,
                 );
+                setNotes([...sheetRef.current.notes]);
               }}
             />
           ))}
