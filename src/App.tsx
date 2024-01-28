@@ -28,7 +28,6 @@ const App = () => {
       const db = dbOpenRequest.result;
       const transaction = db.transaction(["sheets"], "readwrite");
       const sheets = transaction.objectStore("sheets");
-      console.log("jer");
       sheets?.put({
         id: sheetRef.current.id,
         data: sheetRef.current.serialize(),
