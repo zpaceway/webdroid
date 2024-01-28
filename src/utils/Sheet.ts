@@ -1,4 +1,5 @@
 import { TPosition } from "../components/Draggable/types";
+import Debouncer from "./Debouncer";
 
 export type TNote = {
   id: string;
@@ -60,26 +61,32 @@ export class Note implements TNote {
   }
 
   set backgroundColor(backgroundColor: Note["_backgroundColor"]) {
+    this._sheet.saveHistory();
     this._backgroundColor = backgroundColor;
     this._sheet.onChange?.("backgroundColor");
   }
   set textColor(textColor: Note["_textColor"]) {
+    this._sheet.saveHistory();
     this._textColor = textColor;
     this._sheet.onChange?.("textColor");
   }
   set position(position: Note["_position"]) {
+    this._sheet.saveHistory();
     this._position = position;
     this._sheet.onChange?.("position");
   }
   set dimensions(dimensions: Note["_dimensions"]) {
+    this._sheet.saveHistory();
     this._dimensions = dimensions;
     this._sheet.onChange?.("dimensions");
   }
   set text(text: Note["_text"]) {
+    this._sheet.saveHistory();
     this._text = text;
     this._sheet.onChange?.("text");
   }
   set image(image: Note["_image"]) {
+    this._sheet.saveHistory();
     this._image = image;
     this._sheet.onChange?.("image");
   }
@@ -102,19 +109,18 @@ class Sheet {
   private _notes: Note[];
   private _onChange: ((source: string) => void) | null = null;
   private _lastChange: Date;
+  private _history: string[];
+  private debouncer = new Debouncer({ delay: 500 });
 
   constructor() {
     this._id = crypto.randomUUID();
     this._notes = [];
+    this._history = [];
     this._lastChange = new Date();
   }
 
-  addNote(note?: TNote) {
-    const newNote = new Note(this, note);
-    this._notes.push(newNote);
-    this.onChange?.("notes");
-
-    return newNote;
+  get historyCount() {
+    return this._history.length;
   }
 
   get id() {
@@ -134,10 +140,12 @@ class Sheet {
     this._id = id;
   }
   set notes(notes: Sheet["_notes"]) {
+    this.saveHistory();
     this._notes = notes;
     this._onChange?.("notes");
   }
   set lastChange(lastChange: Sheet["_lastChange"]) {
+    this.saveHistory();
     this._lastChange = lastChange;
     this._onChange?.("lastChange");
   }
@@ -156,8 +164,47 @@ class Sheet {
     };
   }
 
-  serialize() {
+  saveHistory() {
+    this.debouncer.exec(() => {
+      const saveFile = this.createSaveFile();
+      this._history.push(saveFile);
+    });
+  }
+
+  createSaveFile() {
     return JSON.stringify(this.toJSON());
+  }
+
+  loadFromSavefile(saveFile: string) {
+    const {
+      id,
+      notes: rawNotes,
+      lastChange,
+    } = JSON.parse(saveFile) as {
+      id: string;
+      notes: TNote[];
+      lastChange: string;
+    };
+    this._id = id;
+    this._notes = [];
+    this._lastChange = new Date(lastChange);
+    rawNotes.map((rawNote) => this.addNote(rawNote, false));
+  }
+
+  loadFromPreviousSaveFile() {
+    const saveFile = this._history.pop();
+    if (!saveFile) return;
+
+    this.loadFromSavefile(saveFile);
+  }
+
+  addNote(note?: TNote, notify = true) {
+    this.saveHistory();
+    const newNote = new Note(this, note);
+    this._notes.push(newNote);
+    if (notify) this.onChange?.("notes");
+
+    return newNote;
   }
 }
 

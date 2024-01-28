@@ -34,13 +34,22 @@ const NoteCard = ({
     new ResizeObserver((entries) => {
       const entry = entries[0];
       const card = (entry.target as HTMLDivElement).getBoundingClientRect();
+      const width = Math.round(card.width);
+      const height = Math.round(card.height);
+
+      if (
+        width === note.dimensions.width &&
+        height === note.dimensions.height
+      ) {
+        return;
+      }
       note.dimensions = {
-        width: Math.round(card.width),
-        height: Math.round(card.height),
+        width,
+        height,
       };
 
-      setWidth(Math.round(card.width));
-      setHeight(Math.round(card.height));
+      setWidth(width);
+      setHeight(height);
     }),
   );
 

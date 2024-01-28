@@ -1,23 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Draggable } from "./components/Draggable";
 import { NoteCard } from "./components/NoteCard";
-import {
-  FaPlusCircle,
-  FaUpload,
-  FaDownload,
-  FaTrashAlt,
-  FaStickyNote,
-} from "react-icons/fa";
-import Sheet, { TNote } from "./utils/Sheet";
+import { FaPlusCircle, FaUpload, FaDownload, FaTrashAlt } from "react-icons/fa";
+import Sheet from "./utils/Sheet";
 import Debouncer from "./utils/Debouncer";
+import { IoArrowUndo } from "react-icons/io5";
 
 const App = () => {
   const inputFileRef = useRef<HTMLInputElement>(null);
   const sheetRef = useRef<Sheet>(new Sheet());
   const [ready, setReady] = useState(false);
   const [notes, setNotes] = useState<Sheet["notes"]>([]);
+  const [historyCount, setHistoryCount] = useState(
+    sheetRef.current.historyCount,
+  );
   const [lastChange, setLastChange] = useState(sheetRef.current.lastChange);
-  const debouncerRef = useRef(new Debouncer({ delay: 1000 }));
+  const debouncerRef = useRef(new Debouncer({ delay: 250 }));
 
   const save = useCallback(() => {
     const dbOpenRequest = indexedDB.open("sticky", 1);
@@ -32,14 +30,16 @@ const App = () => {
       const sheets = transaction.objectStore("sheets");
       sheets?.put({
         id: sheetRef.current.id,
-        data: sheetRef.current.serialize(),
+        data: sheetRef.current.createSaveFile(),
       });
+      setLastChange(sheetRef.current.lastChange);
+      setHistoryCount(sheetRef.current.historyCount);
     };
   }, []);
 
   useEffect(() => {
-    sheetRef.current.onChange = () => {
-      setLastChange(sheetRef.current.lastChange);
+    sheetRef.current.onChange = (source: string) => {
+      console.log({ source });
       debouncerRef.current.exec(() => {
         save();
       });
@@ -79,34 +79,24 @@ const App = () => {
       sheetRequest.onsuccess = () => {
         const result = sheetRequest.result;
         if (result) {
-          const {
-            id,
-            notes: rawNotes,
-            lastChange,
-          } = JSON.parse(result.data) as {
-            id: string;
-            notes: TNote[];
-            lastChange: string;
-          };
-          sheetRef.current.id = id;
-          sheetRef.current.lastChange = new Date(lastChange);
-          sheetRef.current.notes = [];
-
-          rawNotes.map((rawNote) => sheetRef.current.addNote(rawNote));
-
+          sheetRef.current.loadFromSavefile(result.data);
           setNotes([...sheetRef.current.notes]);
+          setLastChange(sheetRef.current.lastChange);
+          setHistoryCount(sheetRef.current.historyCount);
           setReady(true);
           return localStorage.setItem("sheetId", currentSheetId);
         }
         const clearRequest = sheets.clear();
         clearRequest.onsuccess = () => {
           sheetRef.current.notes = [];
-          setNotes([...sheetRef.current.notes]);
           sheetRef.current.id = currentSheetId;
           sheets.add({
             id: currentSheetId,
-            data: sheetRef.current.serialize(),
+            data: sheetRef.current.createSaveFile(),
           });
+          setNotes([...sheetRef.current.notes]);
+          setLastChange(sheetRef.current.lastChange);
+          setHistoryCount(sheetRef.current.historyCount);
           setReady(true);
 
           localStorage.setItem("sheetId", currentSheetId);
@@ -122,20 +112,30 @@ const App = () => {
   return (
     <div className="fixed inset-0 flex items-center justify-center">
       <div className="relative h-full w-full overflow-hidden bg-slate-800">
-        <div className="absolute inset-x-0 top-0 z-50 flex h-16 justify-between bg-blue-500 bg-opacity-60 px-4 text-sm text-white shadow-md">
-          <div className="relative flex items-center gap-6">
+        <div className="absolute inset-x-0 bottom-0 z-50 flex h-16 justify-between bg-blue-600 bg-opacity-60 px-4 text-sm text-white shadow-md">
+          <div className="relative flex items-center gap-4">
             <div
-              className="relative text-4xl"
+              className="relative cursor-pointer"
               onClick={() => {
                 sheetRef.current?.addNote();
                 setNotes([...sheetRef.current.notes]);
               }}
             >
-              <FaStickyNote />
-              <div className="absolute -right-0.5 -top-0.5 rounded-full text-lg text-blue-500">
-                <FaPlusCircle />
-              </div>
+              <FaPlusCircle />
             </div>
+            {historyCount > 0 && (
+              <div
+                className="relative cursor-pointer"
+                onClick={() => {
+                  sheetRef.current.loadFromPreviousSaveFile();
+                  setNotes([...sheetRef.current.notes]);
+                  setLastChange(sheetRef.current.lastChange);
+                  setHistoryCount(sheetRef.current.historyCount);
+                }}
+              >
+                <IoArrowUndo />
+              </div>
+            )}
 
             <input
               ref={inputFileRef}
@@ -144,11 +144,11 @@ const App = () => {
               onChange={(e) => {
                 const file = e.target.files?.[0];
 
-                file?.text().then((savefile) => {
-                  const rawNotes = JSON.parse(savefile).notes as TNote[];
-                  sheetRef.current.notes = [];
-                  rawNotes.map((rawNote) => sheetRef.current.addNote(rawNote));
+                file?.text().then((saveFile) => {
+                  sheetRef.current.loadFromSavefile(saveFile);
                   setNotes([...sheetRef.current.notes]);
+                  setLastChange(sheetRef.current.lastChange);
+                  setHistoryCount(sheetRef.current.historyCount);
                 });
               }}
             />
@@ -161,8 +161,8 @@ const App = () => {
             </button>
             <button
               onClick={() => {
-                const savefile = JSON.stringify({ notes });
-                const blob = new Blob([savefile]);
+                const saveFile = JSON.stringify({ notes });
+                const blob = new Blob([saveFile]);
 
                 const url = window.URL.createObjectURL(blob);
 
@@ -198,8 +198,8 @@ const App = () => {
             }}
             className="flex cursor-pointer select-none flex-col justify-center bg-opacity-60 px-2 py-1 text-right text-xs leading-4"
           >
-            <div>{lastChange.toLocaleDateString()}</div>
             <div>{lastChange.toLocaleTimeString()}</div>
+            <div>{lastChange.toLocaleDateString()}</div>
           </div>
         </div>
         <Draggable
