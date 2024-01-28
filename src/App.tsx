@@ -3,10 +3,9 @@ import { Draggable } from "./components/Draggable";
 import { NoteCard } from "./components/NoteCard";
 import {
   FaPlusCircle,
-  FaCloudDownloadAlt,
-  FaFileExport,
+  FaUpload,
+  FaDownload,
   FaTrashAlt,
-  FaSyncAlt,
   FaStickyNote,
 } from "react-icons/fa";
 import Sheet, { TNote } from "./utils/Sheet";
@@ -123,13 +122,13 @@ const App = () => {
   return (
     <div className="fixed inset-0 flex items-center justify-center">
       <div className="relative h-full w-full overflow-hidden bg-slate-800">
-        <div className="absolute inset-x-0 top-0 z-50 flex h-16 justify-between bg-blue-800 p-4 text-sm text-white shadow-md">
+        <div className="absolute inset-x-0 top-0 z-50 flex h-16 justify-between bg-blue-500 bg-opacity-60 p-4 text-sm text-white shadow-md">
           <div className="relative flex items-center gap-4">
             <div className="text-base">
               <FaStickyNote />
             </div>
             <button
-              className="fixed bottom-4 left-0 flex h-10 w-10 translate-x-[calc(50vw_-_20px)] items-center justify-center rounded-full bg-blue-500 shadow-md"
+              className="fixed bottom-4 left-0 flex h-16 w-16 translate-x-[calc(50vw_-_32px)] items-center justify-center rounded-full bg-blue-500 text-4xl shadow-md"
               onClick={() => {
                 sheetRef.current?.addNote();
                 setNotes([...sheetRef.current.notes]);
@@ -158,7 +157,7 @@ const App = () => {
                 inputFileRef.current?.click();
               }}
             >
-              <FaCloudDownloadAlt />
+              <FaUpload />
             </button>
             <button
               className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
@@ -180,7 +179,7 @@ const App = () => {
                 a.remove();
               }}
             >
-              <FaFileExport />
+              <FaDownload />
             </button>
             <button
               className="rounded-md bg-blue-500 px-4 py-2 shadow-md"
@@ -199,12 +198,10 @@ const App = () => {
             onClick={() => {
               sheetRef.current.lastChange = new Date();
             }}
-            className="fixed bottom-0 right-0 flex cursor-pointer select-none  items-center gap-1 bg-blue-800 bg-opacity-50 px-2 py-0.5 text-[10px]"
+            className="fixed bottom-0 right-0 flex cursor-pointer select-none flex-col bg-blue-500 bg-opacity-60 px-2 py-1 text-right text-xs leading-4"
           >
-            <div>
-              <FaSyncAlt />
-            </div>
-            <div>{lastChange.toLocaleString()}</div>
+            <div>{lastChange.toLocaleDateString()}</div>
+            <div>{lastChange.toLocaleTimeString()}</div>
           </div>
         </div>
         <Draggable
