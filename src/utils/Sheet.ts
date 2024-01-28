@@ -31,7 +31,7 @@ export class Note implements TNote {
       x: 100 + Math.random() * 50 - Math.random() * 50,
       y: 100 + Math.random() * 50 - Math.random() * 50,
     };
-    this._dimensions = note?.dimensions || { width: 100, height: 100 };
+    this._dimensions = note?.dimensions || { width: 160, height: 160 };
     this._text = note?.text || "";
     this._image = note?.image || "";
     this.signature = crypto.randomUUID(); // sign of authenticity
