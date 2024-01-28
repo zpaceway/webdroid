@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Draggable } from "../Draggable";
-import { TNote } from "./types";
 import { ImCross } from "react-icons/im";
 import { IoColorFill } from "react-icons/io5";
 import { PiTextBFill } from "react-icons/pi";
+import { Note } from "../../utils/Sheet";
+import { TPosition } from "../Draggable/types";
 
-const NoteContent = ({
-  initial,
-}: {
-  initial: { text: string; images: string[] };
-}) => {
-  const [text, setText] = useState(initial.text);
-  const [images, setImages] = useState(initial.images);
+const NoteContent = ({ note }: { note: Note }) => {
+  const [text, setText] = useState(note.text);
+  const [image, setImage] = useState(note.image);
 
   return (
     <div className="overflow-auto">
@@ -20,42 +17,39 @@ const NoteContent = ({
         contentEditable
         dangerouslySetInnerHTML={{ __html: text }}
         onBlur={(e) => {
-          initial.text = e.target.innerHTML;
+          note.text = e.target.innerHTML;
           setText(e.target.innerHTML);
         }}
         onPaste={(e) => {
-          const blobs: File[] = [];
+          let blob: File | null = null;
           const items = e.clipboardData?.items;
           if (!items) return;
           for (let i = 0; i < items.length; i++) {
             if (items[i].type.indexOf("image") === 0) {
               const item = items[i].getAsFile();
-              if (item) blobs.push(item);
+              if (item) {
+                blob = item;
+              }
             }
           }
 
-          Promise.all(
-            blobs.map((blob) => {
-              return new Promise<string>((res) => {
-                const reader = new FileReader();
-                reader.onloadend = function () {
-                  res(reader.result?.toString() || "");
-                };
-                reader.readAsDataURL(blob);
-              });
-            }),
-          ).then((newImages) => {
-            setImages((_images) => {
-              const images = [..._images, ...newImages];
-              initial.images = images;
-              return images;
-            });
+          new Promise<string>((res) => {
+            if (!blob) return;
+
+            const reader = new FileReader();
+            reader.onloadend = function () {
+              res(reader.result?.toString() || "");
+            };
+            reader.readAsDataURL(blob);
+          }).then((image) => {
+            note.image = image;
+            setImage(image);
           });
         }}
       />
 
-      {images.map((image) => (
-        <div key={image}>
+      {image && (
+        <div>
           <img
             src={image}
             className="h-full w-full object-fill"
@@ -63,17 +57,17 @@ const NoteContent = ({
             alt=""
           />
         </div>
-      ))}
+      )}
     </div>
   );
 };
 
-const Note = ({
+const NoteCard = ({
   note,
   onSelected,
   onRemove,
 }: {
-  note: TNote;
+  note: Note;
   onSelected: () => void;
   onRemove: () => void;
 }) => {
@@ -91,10 +85,12 @@ const Note = ({
     new ResizeObserver((entries) => {
       const entry = entries[0];
       const card = (entry.target as HTMLDivElement).getBoundingClientRect();
-      setWidth(card.width);
-      setHeight(card.height);
-      note.dimensions.width = card.width;
-      note.dimensions.height = card.height;
+      note.dimensions = {
+        width: Math.round(card.width),
+        height: Math.round(card.height),
+      };
+      setWidth(Math.round(card.width));
+      setHeight(Math.round(card.height));
     }),
   );
 
@@ -117,6 +113,9 @@ const Note = ({
       onClick={onSelected}
       key={note.id}
       initialPosition={note.position}
+      onPositionChanged={(position: TPosition) => {
+        note.position = position;
+      }}
       className="absolute flex resize flex-col overflow-hidden rounded-md text-sm font-medium shadow"
       style={{
         background: backgroundColor,
@@ -169,12 +168,10 @@ const Note = ({
         </div>
       </div>
       <div className="h-full overflow-auto">
-        {note.contents.map((content, index) => (
-          <NoteContent key={index} initial={content} />
-        ))}
+        <NoteContent note={note} />
       </div>
     </Draggable>
   );
 };
 
-export default Note;
+export default NoteCard;

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Draggable } from "./components/Draggable";
-import { TNote } from "./components/Note/types";
-import { Note } from "./components/Note";
-import Debouncer from "./utils/Debouncer";
+import { NoteCard } from "./components/NoteCard";
 import {
   FaPlusCircle,
   FaCloudDownloadAlt,
@@ -11,18 +9,16 @@ import {
   FaSyncAlt,
   FaStickyNote,
 } from "react-icons/fa";
+import Sheet, { TNote } from "./utils/Sheet";
 
 const App = () => {
-  const [notes, setNotes] = useState<TNote[]>([]);
   const inputFileRef = useRef<HTMLInputElement>(null);
-  const [sheetId, setSheetId] = useState<string>();
-  const [lastSaved, setLastSaved] = useState(new Date());
-  const debouncerRef = useRef(new Debouncer({ delay: 1000 }));
+  const sheetRef = useRef<Sheet>(new Sheet());
+  const [ready, setReady] = useState(false);
+  const [notes, setNotes] = useState<Sheet["notes"]>([]);
 
   const save = useCallback(() => {
-    if (!sheetId) return;
-
-    const dbOpenRequest = indexedDB.open("sheet", 1);
+    const dbOpenRequest = indexedDB.open("sticky", 1);
     dbOpenRequest.onupgradeneeded = () => {
       const db = dbOpenRequest.result;
       if (db.objectStoreNames.contains("sheets")) return;
@@ -32,43 +28,22 @@ const App = () => {
       const db = dbOpenRequest.result;
       const transaction = db.transaction(["sheets"], "readwrite");
       const sheets = transaction.objectStore("sheets");
-      const sheetRequest = sheets.get(sheetId);
-
-      const currentSheetData = {
-        id: sheetId,
-        notes,
-        lastSaved: lastSaved.toISOString(),
-      };
-
-      sheetRequest.onsuccess = () => {
-        const sheet = sheetRequest.result;
-        if ((sheet.data as string) === JSON.stringify(currentSheetData)) return;
-
-        const newLastSaved = new Date();
-        currentSheetData.lastSaved = newLastSaved.toISOString();
-        setLastSaved(newLastSaved);
-        sheets?.put({
-          id: sheetId,
-          data: JSON.stringify(currentSheetData),
-        });
-      };
+      console.log("jer");
+      sheets?.put({
+        id: sheetRef.current.id,
+        data: sheetRef.current.serialize(),
+      });
     };
-  }, [lastSaved, notes, sheetId]);
+  }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      debouncerRef.current.exec(() => {
-        save();
-      });
-    }, 5000);
-
-    return () => {
-      clearInterval(interval);
+    sheetRef.current.onChange = () => {
+      save();
     };
   }, [save]);
 
   useEffect(() => {
-    const dbOpenRequest = indexedDB.open("sheet", 1);
+    const dbOpenRequest = indexedDB.open("sticky", 1);
     dbOpenRequest.onupgradeneeded = () => {
       const db = dbOpenRequest.result;
       if (db.objectStoreNames.contains("sheets")) return;
@@ -100,35 +75,44 @@ const App = () => {
       sheetRequest.onsuccess = () => {
         const result = sheetRequest.result;
         if (result) {
-          const { id, notes, lastSaved } = JSON.parse(result.data) as {
+          const {
+            id,
+            notes: rawNotes,
+            lastChange,
+          } = JSON.parse(result.data) as {
             id: string;
             notes: TNote[];
-            lastSaved: string;
+            lastChange: string;
           };
-          setSheetId(id);
+          sheetRef.current.id = id;
+          sheetRef.current.lastChange = new Date(lastChange);
+          sheetRef.current.notes = [];
+
+          const notes = rawNotes.map((rawNote) =>
+            sheetRef.current.addNote(rawNote),
+          );
+
           setNotes(notes);
-          setLastSaved(new Date(lastSaved));
+          setReady(true);
           return localStorage.setItem("sheetId", currentSheetId);
         }
         const clearRequest = sheets.clear();
         clearRequest.onsuccess = () => {
+          setNotes([]);
+          sheetRef.current.id = currentSheetId;
           sheets.add({
             id: currentSheetId,
-            data: JSON.stringify({
-              id: currentSheetId,
-              notes: [],
-              lastSaved: new Date().toISOString(),
-            }),
-          }),
-            currentSheetId;
+            data: sheetRef.current.serialize(),
+          });
+          setReady(true);
+
           localStorage.setItem("sheetId", currentSheetId);
-          setSheetId(currentSheetId);
         };
       };
     };
   }, []);
 
-  if (sheetId === undefined) {
+  if (!ready) {
     return <></>;
   }
 
@@ -143,25 +127,8 @@ const App = () => {
             <button
               className="fixed bottom-4 left-0 flex h-10 w-10 translate-x-[calc(50vw_-_20px)] items-center justify-center rounded-full bg-blue-500 shadow-md"
               onClick={() => {
-                setNotes((notes) => [
-                  ...notes,
-                  {
-                    id: crypto.randomUUID(),
-                    backgroundColor: "#3b82f6",
-                    textColor: "#ffffff",
-                    position: {
-                      x: 100 + Math.random() * 50 - Math.random() * 50,
-                      y: 100 + Math.random() * 50 - Math.random() * 50,
-                    },
-                    dimensions: { width: 100, height: 100 },
-                    contents: [
-                      {
-                        text: "",
-                        images: [],
-                      },
-                    ],
-                  },
-                ]);
+                const newNote = sheetRef.current?.addNote();
+                setNotes([...notes, newNote]);
               }}
             >
               <FaPlusCircle />
@@ -174,7 +141,11 @@ const App = () => {
                 const file = e.target.files?.[0];
 
                 file?.text().then((savefile) => {
-                  const notes = JSON.parse(savefile).notes as TNote[];
+                  const rawNotes = JSON.parse(savefile).notes as TNote[];
+                  sheetRef.current.notes = [];
+                  const notes = rawNotes.map((rawNote) =>
+                    sheetRef.current!.addNote(rawNote),
+                  );
                   setNotes(notes);
                 });
               }}
@@ -195,7 +166,6 @@ const App = () => {
 
                 const url = window.URL.createObjectURL(blob);
 
-                // Step 3: Create an anchor (<a>) element
                 const a = document.createElement("a");
                 document.body.appendChild(a);
                 a.style.display = "none";
@@ -225,15 +195,14 @@ const App = () => {
           </div>
           <div
             onClick={() => {
-              setLastSaved(new Date());
-              save();
+              sheetRef.current!.lastChange = new Date();
             }}
             className="fixed bottom-0 right-0 flex cursor-pointer select-none  items-center gap-1 bg-blue-800 bg-opacity-50 px-2 py-0.5 text-[10px]"
           >
             <div>
               <FaSyncAlt />
             </div>
-            <div>{lastSaved?.toLocaleString()}</div>
+            <div>{sheetRef.current!.lastChange?.toLocaleString()}</div>
           </div>
         </div>
         <Draggable
@@ -246,19 +215,19 @@ const App = () => {
           }}
         >
           {notes.map((note) => (
-            <Note
+            <NoteCard
               key={note.id}
               note={note}
               onSelected={() => {
                 if (notes.slice(-1)[0].id === note.id) return;
                 setNotes((notes) => [
-                  ...notes.filter((_note) => _note.id !== note.id),
+                  ...notes!.filter((_note) => _note.id !== note.id),
                   note,
                 ]);
               }}
               onRemove={() => {
                 setNotes((notes) =>
-                  notes.filter((_note) => _note.id !== note.id),
+                  notes!.filter((_note) => _note.id !== note.id),
                 );
               }}
             />
