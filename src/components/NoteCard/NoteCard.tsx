@@ -6,6 +6,7 @@ import { PiTextBFill } from "react-icons/pi";
 import { Note } from "../../utils/Sheet";
 import { TPosition } from "../Draggable/types";
 import { MdHideImage, MdImage } from "react-icons/md";
+import { TbNotes, TbNotesOff } from "react-icons/tb";
 
 const NoteCard = ({
   note,
@@ -93,6 +94,19 @@ const NoteCard = ({
           <div
             className="flex cursor-pointer items-center text-base text-white"
             onClick={() => {
+              if (note.text === null) {
+                note.text = "";
+                return setText("");
+              }
+              note.text = null;
+              setText(null);
+            }}
+          >
+            {text === null ? <TbNotes /> : <TbNotesOff />}
+          </div>
+          <div
+            className="flex cursor-pointer items-center text-base text-white"
+            onClick={() => {
               if (image) {
                 note.image = "";
                 return setImage("");
@@ -173,41 +187,43 @@ const NoteCard = ({
           }}
         >
           <div>
-            <div
-              className="w-full whitespace-pre-wrap bg-transparent p-4 outline-none"
-              contentEditable
-              dangerouslySetInnerHTML={{ __html: text }}
-              onBlur={(e) => {
-                note.text = e.target.innerHTML;
-                setText(e.target.innerHTML);
-              }}
-              onPaste={(e) => {
-                let blob: File | null = null;
-                const items = e.clipboardData?.items;
-                if (!items) return;
-                for (let i = 0; i < items.length; i++) {
-                  if (items[i].type.indexOf("image") === 0) {
-                    const item = items[i].getAsFile();
-                    if (item) {
-                      blob = item;
+            {text !== null && (
+              <div
+                className="w-full whitespace-pre-wrap bg-transparent p-4 outline-none"
+                contentEditable
+                dangerouslySetInnerHTML={{ __html: text }}
+                onBlur={(e) => {
+                  note.text = e.target.innerHTML;
+                  setText(e.target.innerHTML);
+                }}
+                onPaste={(e) => {
+                  let blob: File | null = null;
+                  const items = e.clipboardData?.items;
+                  if (!items) return;
+                  for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf("image") === 0) {
+                      const item = items[i].getAsFile();
+                      if (item) {
+                        blob = item;
+                      }
                     }
                   }
-                }
 
-                new Promise<string>((res) => {
-                  if (!blob) return;
+                  new Promise<string>((res) => {
+                    if (!blob) return;
 
-                  const reader = new FileReader();
-                  reader.onloadend = function () {
-                    res(reader.result?.toString() || "");
-                  };
-                  reader.readAsDataURL(blob);
-                }).then((image) => {
-                  note.image = image;
-                  setImage(image);
-                });
-              }}
-            />
+                    const reader = new FileReader();
+                    reader.onloadend = function () {
+                      res(reader.result?.toString() || "");
+                    };
+                    reader.readAsDataURL(blob);
+                  }).then((image) => {
+                    note.image = image;
+                    setImage(image);
+                  });
+                }}
+              />
+            )}
 
             {image && (
               <div>

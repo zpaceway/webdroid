@@ -7,7 +7,7 @@ export type TNote = {
   textColor: string;
   position: TPosition;
   dimensions: { width: number; height: number };
-  text: string;
+  text: string | null;
   image: string;
 };
 
@@ -18,23 +18,25 @@ export class Note implements TNote {
   private _textColor: string;
   private _position: TPosition;
   private _dimensions: { width: number; height: number };
-  private _text: string;
+  private _text: string | null;
   private _image: string;
 
   public signature: string;
 
   constructor(sheet: Sheet, note?: TNote) {
     this._sheet = sheet;
-    this.id = note?.id || crypto.randomUUID();
-    this._backgroundColor = note?.backgroundColor || "#3b82f6";
-    this._textColor = note?.textColor || "#ffffff";
-    this._position = note?.position || {
-      x: 100 + Math.random() * 50 - Math.random() * 50,
-      y: 100 + Math.random() * 50 - Math.random() * 50,
-    };
-    this._dimensions = note?.dimensions || { width: 160, height: 160 };
-    this._text = note?.text || "";
-    this._image = note?.image || "";
+    this.id = note ? note.id : crypto.randomUUID();
+    this._backgroundColor = note ? note.backgroundColor : "#3b82f6";
+    this._textColor = note ? note.textColor : "#ffffff";
+    this._position = note
+      ? note.position
+      : {
+          x: 100 + Math.random() * 50 - Math.random() * 50,
+          y: 100 + Math.random() * 50 - Math.random() * 50,
+        };
+    this._dimensions = note ? note.dimensions : { width: 160, height: 160 };
+    this._text = note ? note.text : "";
+    this._image = note ? note.image : "";
     this.signature = crypto.randomUUID(); // sign of authenticity
   }
 
@@ -132,7 +134,7 @@ class Sheet {
   get lastChange() {
     return this._lastChange;
   }
-  get onChange(): ((source: string) => void) | null {
+  get onChange() {
     return this._onChange;
   }
 
